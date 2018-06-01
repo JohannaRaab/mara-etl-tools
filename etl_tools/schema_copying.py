@@ -51,8 +51,8 @@ class ParallelCopySchema(ParallelTask):
         """In parallel copies a PostgreSQL database schema from one database to another."""
 
         ParallelTask.__init__(self, id=id, description=description,
-                                        max_number_of_parallel_tasks=max_number_of_parallel_tasks,
-                                        commands_before=commands_before, commands_after=commands_after)
+                              max_number_of_parallel_tasks=max_number_of_parallel_tasks,
+                              commands_before=commands_before, commands_after=commands_after)
 
         self.source_db_alias = source_db_alias
         self.target_db_alias = target_db_alias
