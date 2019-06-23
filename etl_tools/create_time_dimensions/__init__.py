@@ -19,6 +19,14 @@ pipeline.add(
          ]))
 
 pipeline.add(
+    Task(id="create_util_functions",
+         description="Creates time util functions",
+         commands=[
+             ExecuteSQL(sql_file_name='create_util_functions.sql', echo_queries=False)
+         ]),
+    upstreams=['create_tables'])
+
+pipeline.add(
     Task(id="populate_time_dimensions", description="fills the time dimensions for a configured time range",
          commands=[
              ExecuteSQL(sql_statement=lambda: "SELECT time.populate_time_dimensions('"
