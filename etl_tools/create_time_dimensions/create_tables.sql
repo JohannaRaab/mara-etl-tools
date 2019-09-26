@@ -3,26 +3,32 @@ CREATE SCHEMA time;
 
 
 CREATE TABLE time.day (
-  day_id             INTEGER PRIMARY KEY,
-  day_name           TEXT     NOT NULL UNIQUE,
-  year_id            SMALLINT NOT NULL,
-  year_name          TEXT     NOT NULL,
-  iso_year_id        SMALLINT NOT NULL,
-  iso_year_name      TEXT     NOT NULL,
-  quarter_id         SMALLINT NOT NULL,
-  quarter_name       TEXT     NOT NULL,
-  quarter_short_name TEXT     NOT NULL,
-  month_id           INTEGER  NOT NULL,
-  month_name         TEXT     NOT NULL,
-  month_short_id     INTEGER  NOT NULL,
-  month_short_name   TEXT     NOT NULL,
-  week_id            INTEGER  NOT NULL,
-  week_name          TEXT     NOT NULL,
-  week_short_name    TEXT     NOT NULL,
-  day_of_week_id     SMALLINT NOT NULL,
-  day_of_week_name   TEXT     NOT NULL,
-  day_of_month_id    SMALLINT NOT NULL,
-  _date              DATE     NOT NULL
+    day_id                    INTEGER PRIMARY KEY,
+    _day_reverse_sort_id      INTEGER  NOT NULL,
+    day_name                  TEXT     NOT NULL UNIQUE,
+    year_id                   SMALLINT NOT NULL,
+    _year_reverse_sort_id     SMALLINT NOT NULL,
+    year_name                 TEXT     NOT NULL,
+    iso_year_id               SMALLINT NOT NULL,
+    _iso_year_reverse_sort_id SMALLINT NOT NULL,
+    iso_year_name             TEXT     NOT NULL,
+    quarter_id                SMALLINT NOT NULL,
+    _quarter_reverse_sort_id  INTEGER  NOT NULL,
+    quarter_name              TEXT     NOT NULL,
+    quarter_short_name        TEXT     NOT NULL,
+    month_id                  INTEGER  NOT NULL,
+    _month_reverse_sort_id    INTEGER  NOT NULL,
+    month_name                TEXT     NOT NULL,
+    month_short_id            INTEGER  NOT NULL,
+    month_short_name          TEXT     NOT NULL,
+    week_id                   INTEGER  NOT NULL,
+    _week_reverse_sort_id     INTEGER  NOT NULL,
+    week_name                 TEXT     NOT NULL,
+    week_short_name           TEXT     NOT NULL,
+    day_of_week_id            SMALLINT NOT NULL,
+    day_of_week_name          TEXT     NOT NULL,
+    day_of_month_id           SMALLINT NOT NULL,
+    _date                     DATE     NOT NULL
 );
 
 SELECT util.add_index('time', 'day', column_names := ARRAY ['year_id']);
@@ -82,31 +88,36 @@ CREATE OR REPLACE FUNCTION time.populate_time_dimensions(start_date DATE, end_da
   RETURNS VOID AS $$
 
 INSERT INTO time.day
-  SELECT
-    to_char(d, 'YYYYMMDD') :: INTEGER AS day_id,
-    to_char(d, 'Dy, Mon DD YYYY')     AS day_name,
-    extract('year' FROM d)            AS year_id,
-    to_char(d, 'YYYY')                AS year_name,
-    extract('isoyear' FROM d)         AS iso_year_id,
-    extract('isoyear' FROM d) :: TEXT AS iso_year_name,
-    to_char(d, 'YYYYQ') :: SMALLINT   AS quarter_id,
-    to_char(d, 'YYYY "Q"Q')           AS quarter_name,
-    to_char(d, '"Q"Q')                AS quarter_short_name,
-    to_char(d, 'YYYYMM') :: INTEGER   AS month_id,
-    to_char(d, 'YYYY Mon')            AS month_name,
-    to_char(d, 'MM') :: INTEGER       AS month_short_id,
-    to_char(d, 'Mon')                 AS month_short_name,
-    to_char(d, 'IYYYIW') :: INTEGER   AS week_id,
-    to_char(d, 'IYYY "-" "CW "IW')    AS week_name,
-    to_char(d, '"CW "IW')             AS week_short_name,
-    to_char(d, 'ID') :: SMALLINT      AS day_of_week_id,
-    to_char(d, 'Day')                 AS day_of_week_name,
-    to_char(d, 'DD') :: SMALLINT      AS day_of_month_id,
-    d                                 AS _date
+SELECT to_char(d, 'YYYYMMDD') :: INTEGER  AS day_id,
+       to_char(d, '-YYYYMMDD') :: INTEGER AS _day_reverse_sort_id,
+       to_char(d, 'Dy, Mon DD YYYY')      AS day_name,
+       extract('year' FROM d)             AS year_id,
+       -extract('year' FROM d)            AS _year_reverse_sort_id,
+       to_char(d, 'YYYY')                 AS year_name,
+       extract('isoyear' FROM d)          AS iso_year_id,
+       -extract('isoyear' FROM d)         AS _iso_year_reverse_sort_id,
+       extract('isoyear' FROM d) :: TEXT  AS iso_year_name,
+       to_char(d, 'YYYYQ') :: SMALLINT    AS quarter_id,
+       to_char(d, '-YYYYQ') :: SMALLINT   AS _quarter_reverse_sort_id,
+       to_char(d, 'YYYY "Q"Q')            AS quarter_name,
+       to_char(d, '"Q"Q')                 AS quarter_short_name,
+       to_char(d, 'YYYYMM') :: INTEGER    AS month_id,
+       to_char(d, '-YYYYMM') :: INTEGER   AS _month_reverse_sort_id,
+       to_char(d, 'YYYY Mon')             AS month_name,
+       to_char(d, 'MM') :: INTEGER        AS month_short_id,
+       to_char(d, 'Mon')                  AS month_short_name,
+       to_char(d, 'IYYYIW') :: INTEGER    AS week_id,
+       to_char(d, 'IYYYIW') :: INTEGER    AS _week_reverse_sort_id,
+       to_char(d, 'IYYY "-" "CW "IW')     AS week_name,
+       to_char(d, '"CW "IW')              AS week_short_name,
+       to_char(d, 'ID') :: SMALLINT       AS day_of_week_id,
+       trim(to_char(d, 'Day'))            AS day_of_week_name,
+       to_char(d, 'DD') :: SMALLINT       AS day_of_month_id,
+       d                                  AS _date
 
-  FROM generate_series($1 :: TIMESTAMP - INTERVAL '1 Day', $2 :: TIMESTAMP, '1 day') AS d
-    LEFT JOIN time.day ON day._date = d
-  WHERE day.day_id IS NULL;
+FROM generate_series($1 :: TIMESTAMP - INTERVAL '1 Day', $2 :: TIMESTAMP, '1 day') AS d
+         LEFT JOIN time.day ON day._date = d
+WHERE day.day_id IS NULL;
 
 
 INSERT INTO time.duration
